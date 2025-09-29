@@ -6,7 +6,7 @@ class GPSRenderer {
     this.camera = {
       x: 0,
       y: 0,
-      scale: 1,
+      scale: 15,
     };
   }
 
@@ -60,7 +60,7 @@ class GPSRenderer {
   }
 
   drawGrid() {
-    this.ctx.strokeStyle = "#e0e0e0";
+    this.ctx.strokeStyle = "#8a8a8aff";
     this.ctx.lineWidth = 0.5;
 
     const gridSize = 50;
@@ -94,7 +94,7 @@ class GPSRenderer {
     if (waypoints.length < 2) return;
 
     // Рисуем пройденный путь
-    this.ctx.strokeStyle = "#95a5a6";
+    this.ctx.strokeStyle = "#368d40ff";
     this.ctx.lineWidth = 2;
     this.ctx.setLineDash([5, 5]);
     this.ctx.beginPath();
@@ -146,7 +146,7 @@ class GPSRenderer {
     this.ctx.rotate(vehicle.heading);
 
     // Кузов
-    this.ctx.fillStyle = "#3498db";
+    this.ctx.fillStyle = "#0900b5ff";
     this.ctx.fillRect(
       -vehicle.length / 2,
       -vehicle.width / 2,

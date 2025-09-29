@@ -29,7 +29,7 @@ class GPSSimulation {
     const currentTarget = this.navigation.getCurrentTarget();
 
     if (currentTarget) {
-      // Ваш алгоритм управления с учетом режима
+      // Алгоритм управления с учетом режима
       const targetSteering = this.controller.calculate(
         gpsData,
         this.navigation.getPathToNext(),
@@ -41,6 +41,8 @@ class GPSSimulation {
         targetSteering,
         deltaTime
       );
+
+      this.updateWayPoints(gpsData.position, this.navigation);
 
       // Обновляем скорость в зависимости от режима
       this.updateSpeedBasedOnMode();
@@ -116,6 +118,22 @@ class GPSSimulation {
   clearWaypoints() {
     this.navigation.clearWaypoints();
     this.waypoints = [];
+  }
+
+  updateWayPoints(position, navigation) {
+    if (this.waypoints === null || this.waypoints.length < 1) {
+      return;
+    }
+
+    const distance = Math.sqrt(
+      Math.pow(position.x - this.waypoints[0].x, 2) +
+        Math.pow(position.y - this.waypoints[0].y, 2)
+    );
+
+    if (distance < 5) {
+      this.waypoints.shift();
+      navigation.shiftWayPoints();
+    }
   }
 
   reset() {
@@ -291,41 +309,29 @@ class NavigationSystem {
     this.currentWaypointIndex = 0;
   }
 
-  getCurrentTarget() {
-    if (
-      this.waypoints.length === 0 ||
-      this.currentWaypointIndex >= this.waypoints.length
-    ) {
-      return null;
-    }
-    return this.waypoints[this.currentWaypointIndex];
+  shiftWayPoints() {
+    this.waypoints.shift();
   }
 
-  update(position) {
-    if (this.waypoints.length === 0) return false;
+  getCurrentTarget() {
+    if (this.waypoints.length === 0) {
+      return null;
+    }
+    return this.waypoints[0];
+  }
+
+  update() {
+    if (this.waypoints.length === 0) return true;
 
     const target = this.getCurrentTarget();
     if (!target) return true; // маршрут завершен
 
-    const distance = Math.sqrt(
-      Math.pow(position.x - target.x, 2) + Math.pow(position.y - target.y, 2)
-    );
-
-    if (distance < this.arrivalThreshold) {
-      this.currentWaypointIndex++;
-      if (this.currentWaypointIndex >= this.waypoints.length) {
-        return true; // маршрут завершен
-      }
-    }
     return false;
   }
 
   getPathToNext() {
     if (this.waypoints.length === 0) return [];
-
-    const startIdx = this.currentWaypointIndex;
-    const endIdx = Math.min(startIdx + 5, this.waypoints.length);
-    return this.waypoints.slice(startIdx, endIdx);
+    return this.waypoints;
   }
 }
 
@@ -392,18 +398,13 @@ class SteeringController {
   }
 
   calculate(gpsData, waypoints, mode) {
-    if (waypoints.length < 2 || mode === "stop") {
+    if (waypoints.length < 1 || mode === "stop") {
       this.lastAngleError = 0;
       return 0;
     }
 
     const params = this.modeParams[mode] || this.modeParams.follow;
-    const targetPoint = this.findTargetPoint(
-      gpsData.position,
-      gpsData.heading,
-      waypoints,
-      params.lookahead
-    );
+    const targetPoint = this.findTargetPoint(waypoints);
 
     if (!targetPoint) {
       this.lastAngleError = 0;
@@ -415,6 +416,7 @@ class SteeringController {
       targetPoint.y - gpsData.position.y,
       targetPoint.x - gpsData.position.x
     );
+    console.log(`targetAngle = ${targetAngle}`);
 
     // Ошибка угла
     let angleError = targetAngle - gpsData.heading;
@@ -425,22 +427,8 @@ class SteeringController {
 
     this.lastAngleError = angleError * (180 / Math.PI); // для отладки
 
-    // PID регулятор
-    this.integralError += angleError;
-    const derivativeError = angleError - this.lastError;
-    this.lastError = angleError;
-
-    // Ограничение интегральной составляющей
-    this.integralError = Math.max(-2, Math.min(2, this.integralError));
-
-    // Вычисление управления
-    let steering =
-      params.kp * angleError +
-      params.ki * this.integralError +
-      params.kd * derivativeError;
-
     // Преобразуем в градусы и ограничиваем
-    steering = steering * (180 / Math.PI);
+    let steering = angleError * (180 / Math.PI) * 0.25;
     steering = Math.max(
       -this.maxSteeringAngle,
       Math.min(this.maxSteeringAngle, steering)
@@ -449,20 +437,11 @@ class SteeringController {
     return steering;
   }
 
-  findTargetPoint(position, heading, waypoints, lookahead) {
-    // Ищем точку на траектории на расстоянии lookahead
-    for (let i = 0; i < waypoints.length; i++) {
-      const distance = Math.sqrt(
-        Math.pow(position.x - waypoints[i].x, 2) +
-          Math.pow(position.y - waypoints[i].y, 2)
-      );
-
-      if (distance >= lookahead) {
-        return waypoints[i];
-      }
+  findTargetPoint(waypoints) {
+    if (waypoints !== null && waypoints.length > 0) {
+      return waypoints[0];
+    } else {
+      return null;
     }
-
-    // Если не нашли, берем последнюю точку
-    return waypoints[waypoints.length - 1];
   }
 }
