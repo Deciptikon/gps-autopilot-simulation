@@ -14,7 +14,6 @@ export default class Vehicle {
     this.acceleration = 0.0001;
     this.deceleration = 0.000001;
     this.turnSpeed = 0.003;
-    this.boundary = 8;
 
     // Управление
     this.angleRule = 0;
@@ -88,16 +87,6 @@ export default class Vehicle {
 
     this.position.x -= moveX;
     this.position.z -= moveZ;
-
-    // Ограничиваем движение в пределах границ
-    this.position.x = Math.max(
-      -this.boundary,
-      Math.min(this.boundary, this.position.x)
-    );
-    this.position.z = Math.max(
-      -this.boundary,
-      Math.min(this.boundary, this.position.z)
-    );
 
     this.updatePosition();
   }

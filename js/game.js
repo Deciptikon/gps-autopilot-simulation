@@ -1,3 +1,5 @@
+import Autopilot from "./Autopilot.js";
+import GPS from "./GPS.js";
 import SceneManager from "./SceneManager.js";
 import Vehicle from "./Vehicle.js";
 
@@ -5,6 +7,8 @@ class Game {
   constructor() {
     this.sceneManager = null;
     this.vehicle = null;
+    this.gps = null;
+
     this.keys = {};
     this.isRunning = false;
 
@@ -18,8 +22,16 @@ class Game {
     // Создаем транспортное средство
     this.vehicle = new Vehicle(this.sceneManager.getScene());
 
+    // Создаём GPS
+    this.gps = new GPS(this.sceneManager.getScene(), 0.4);
+
+    this.autopilot = new Autopilot(this.sceneManager.getScene(), 50, 5);
+    this.autopilot.init();
+
     // Настраиваем управление
     this.setupControls();
+
+    this.addControlsInfo();
 
     // Запускаем игровой цикл
     this.start();
@@ -32,7 +44,7 @@ class Game {
 
       // Для отладки - логируем статус при нажатии пробела
       if (e.code === "Space") {
-        this.vehicle.logStatus();
+        this.autopilot.swapActive();
       }
     });
 
@@ -57,6 +69,10 @@ class Game {
     this.vehicle.updatePhysics();
 
     this.sceneManager.updateCamera(this.vehicle.getCameraData());
+
+    this.gps.update(this.vehicle.getPosition());
+
+    this.autopilot.update(this.gps.getPosition());
   }
 
   animate() {
@@ -66,6 +82,19 @@ class Game {
 
     this.update();
     this.sceneManager.render();
+  }
+
+  addControlsInfo() {
+    const controlsDiv = document.createElement("div");
+    controlsDiv.className = "controls";
+    controlsDiv.innerHTML = `
+            <strong>Управление:</strong><br>
+            W - вперед<br>
+            A - влево<br>
+            D - вправо<br>
+            Space - вкл/выкл траекторию<br>
+        `;
+    document.body.appendChild(controlsDiv);
   }
 
   start() {

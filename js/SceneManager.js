@@ -6,6 +6,7 @@ export default class SceneManager {
     this.camera = null;
     this.renderer = null;
     this.ground = null;
+    this.grid = null;
 
     this.init();
   }
@@ -33,12 +34,15 @@ export default class SceneManager {
     // Создаем землю
     this.createGround();
 
+    // Создаем сетку
+    this.createGrid();
+
     // Обработчик изменения размера окна
     window.addEventListener("resize", () => this.onWindowResize());
   }
 
   createGround() {
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundGeometry = new THREE.PlaneGeometry(200, 200);
     const groundMaterial = new THREE.MeshBasicMaterial({
       color: 0x90ee90, // светло-зеленый
       side: THREE.DoubleSide,
@@ -48,6 +52,25 @@ export default class SceneManager {
     this.ground.rotation.x = Math.PI / 2; // Поворачиваем плоскость горизонтально
     this.ground.position.y = -2; // Опускаем землю ниже
     this.scene.add(this.ground);
+  }
+
+  createGrid() {
+    // Параметры сетки
+    const size = 200; // Размер сетки (должен соответствовать размеру земли)
+    const divisions = 200; // Количество делений (1 деление = 1 метр при размере 20)
+
+    // Создаем сетку
+    this.grid = new THREE.GridHelper(size, divisions, 0x000000, 0x000000);
+
+    // Настраиваем внешний вид сетки
+    this.grid.material.opacity = 0.2;
+    this.grid.material.transparent = true;
+
+    // Позиционируем сетку чуть выше земли, чтобы избежать конфликта z-fighting
+    this.grid.position.y = -1.95;
+    //this.grid.rotation.x = Math.PI / 2; // Поворачиваем горизонтально, как землю
+
+    this.scene.add(this.grid);
   }
 
   onWindowResize() {
@@ -70,7 +93,6 @@ export default class SceneManager {
 
   updateCamera(data) {
     const [position, lookAt] = data;
-    console.log(position, "  ", lookAt);
 
     this.camera.position.set(position.x, position.y, position.z);
     this.camera.lookAt(lookAt.x, lookAt.y, lookAt.z);
