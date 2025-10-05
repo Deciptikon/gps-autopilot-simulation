@@ -2,6 +2,7 @@ import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/thr
 
 import { Grid } from "./grid.js";
 import { ListPath } from "./list_path.js";
+import { allSegments, findPointsInAABB } from "./function.js";
 
 const Y_LAND = -1.9;
 
@@ -19,6 +20,9 @@ export default class Autopilot {
 
     this.width = width;
     this.points = [];
+    this.leftPoints = [];
+    this.rightPoints = [];
+
     this.vertices = [];
     this.indices = [];
 
@@ -99,11 +103,11 @@ export default class Autopilot {
     }
 
     this.lastPosition = this.currentPosition;
-    this.currentPosition = {
-      x: gpsPosition.x,
-      y: Y_LAND,
-      z: gpsPosition.z,
-    };
+    this.currentPosition = new THREE.Vector3(
+      gpsPosition.x,
+      Y_LAND,
+      gpsPosition.z
+    );
 
     this.points.push(this.currentPosition);
 
@@ -115,10 +119,9 @@ export default class Autopilot {
       return;
     }
 
-    const dir = new THREE.Vector3(
-      this.currentPosition.x - this.lastPosition.x,
-      0, //this.currentPosition.y - this.lastPosition.y,
-      this.currentPosition.z - this.lastPosition.z
+    const dir = new THREE.Vector3().subVectors(
+      this.currentPosition,
+      this.lastPosition
     );
 
     const orth = new THREE.Vector3(-dir.z, 0, dir.x)
@@ -133,8 +136,12 @@ export default class Autopilot {
       this.currentPosition,
       orth
     );
+    this.leftPoints.push(leftPoint);
+    this.rightPoints.push(rightPoint);
 
     if (this.vertices.length === 0) {
+      this.leftPoints.push(leftPoint);
+      this.rightPoints.push(rightPoint);
       this.vertices.push(
         leftPoint.x,
         leftPoint.y,
@@ -164,8 +171,33 @@ export default class Autopilot {
     );
     this.updateGeometry();
 
-    //this.addPointMarker(leftPoint);
-    //this.addPointMarker(rightPoint);
+    const localPoints = findPointsInAABB(
+      this.currentPosition,
+      this.points,
+      2 * this.width,
+      1
+    );
+
+    const lSeg = allSegments(
+      leftPoint,
+      localPoints,
+      this.leftPoints,
+      this.rightPoints
+    );
+    const rSeg = allSegments(
+      rightPoint,
+      localPoints,
+      this.leftPoints,
+      this.rightPoints
+    );
+    if (lSeg.length !== 0) {
+      console.log("trans leftPoint");
+      this.addPointMarker(leftPoint);
+    }
+    if (rSeg.length !== 0) {
+      console.log("trans rightPoint");
+      this.addPointMarker(rightPoint);
+    }
   }
 
   addPointMarker(position) {
