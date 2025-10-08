@@ -46,6 +46,12 @@ class Game {
       if (e.code === "Space") {
         this.autopilot.swapActive();
       }
+      if (e.code === "KeyW") {
+        this.vehicle.swapGas();
+      }
+      if (e.code === "KeyS") {
+        this.vehicle.setGas(false);
+      }
     });
 
     window.addEventListener("keyup", (e) => {
@@ -55,14 +61,13 @@ class Game {
 
   update() {
     let ang = 0;
-    let gas = false;
     // Обрабатываем управление транспортным средством
-    if (this.keys["KeyW"]) gas = true;
-    if (this.keys["KeyS"]) gas = false;
+    //if (this.keys["KeyW"]) this.vehicle.swapGas();
+    //if (this.keys["KeyS"]) this.vehicle.setGas(false);
     if (this.keys["KeyA"]) ang = 1;
     if (this.keys["KeyD"]) ang = -1;
 
-    this.vehicle.move(ang, gas);
+    this.vehicle.move(ang);
 
     // Обновляем физику даже когда клавиши не нажаты (для замедления)
 

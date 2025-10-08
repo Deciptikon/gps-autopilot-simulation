@@ -2,13 +2,29 @@ import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/thr
 
 import { Grid } from "./grid.js";
 import { ListPath } from "./list_path.js";
-import { allSegments, findPointsInAABB } from "./function.js";
+import {
+  allSegments,
+  drawCircle,
+  fillGround,
+  findPointsInAABB,
+  worldToScreen,
+  worldToScreenVec2d,
+} from "./function.js";
+import { CANVAS_SIZE, GROUND_SIZE, SCALE } from "./constants.js";
+import Vector2d from "./Vector2d.js";
+import VirtualCanvas from "./VirtualCanvas.js";
 
 const Y_LAND = -1.9;
 
 export default class Autopilot {
   constructor(scene, step = 10, width = 3) {
     this.scene = scene;
+    this.ground = null;
+    this.ctx = null;
+    this.texture = null;
+    this.material = null;
+    this.virtualCanvas = null;
+
     this.position = { x: 0, y: 0, z: 0 };
 
     this.step = step;
@@ -35,15 +51,32 @@ export default class Autopilot {
   init() {
     this.chunks = new Grid();
 
-    this.geometry = new THREE.BufferGeometry();
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.8,
+    const canvas = document.createElement("canvas");
+    canvas.height = CANVAS_SIZE.h;
+    canvas.width = CANVAS_SIZE.w;
+    this.ctx = canvas.getContext("2d");
+
+    //fillGround(this.ctx, "#00ff00");
+
+    this.texture = new THREE.CanvasTexture(canvas);
+    this.material = new THREE.MeshBasicMaterial({
+      map: this.texture,
+      side: THREE.DoubleSide, // Важно для плоскости
+      transparent: true, // Если используются прозрачные цвета
+      opacity: 1.0,
     });
-    this.createMesh(material);
-    this.scene.add(this.mesh);
+
+    this.ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(GROUND_SIZE.w, GROUND_SIZE.h),
+      this.material
+    );
+    this.ground.rotation.x = Math.PI / 2;
+    this.ground.position.y = -2;
+    this.scene.add(this.ground);
+
+    this.virtualCanvas = new VirtualCanvas(canvas, this.ground, SCALE);
+    //fillGround(this.ctx);
+    //this.texture.needsUpdate = true;
   }
 
   _convert(val) {
@@ -98,6 +131,82 @@ export default class Autopilot {
   }
 
   update(gpsPosition) {
+    if (gpsPosition === null || !this.active) {
+      return;
+    }
+
+    this.lastPosition = this.currentPosition;
+    this.currentPosition = new Vector2d(gpsPosition.x, gpsPosition.z);
+
+    this.points.push(this.currentPosition);
+    console.log(this.points.length);
+    console.log("this.currentPosition = ", this.currentPosition);
+
+    if (this.points.length < 2) {
+      return;
+    }
+
+    const dir = this.currentPosition.sub(this.lastPosition);
+
+    const orth = dir.ortho().normalize(this.width / 2);
+
+    const leftPoint = this.currentPosition.sub(orth);
+    const rightPoint = this.currentPosition.add(orth);
+
+    this.leftPoints.push(leftPoint);
+    this.rightPoints.push(rightPoint);
+
+    const last = this.leftPoints.length - 1;
+    if (last < 1) {
+      return;
+    }
+
+    this.virtualCanvas.centered(this.currentPosition);
+
+    this.virtualCanvas.update(
+      this.leftPoints[last - 1],
+      this.rightPoints[last - 1],
+      this.leftPoints[last],
+      this.rightPoints[last],
+      "rgba(0, 0, 255, 0.72)"
+    );
+
+    /** 
+    this.drawSegment(
+      this.ctx,
+      this.leftPoints[last - 1],
+      this.rightPoints[last - 1],
+      this.leftPoints[last],
+      this.rightPoints[last],
+      "rgba(255, 255, 0, 0.5)"
+    );*/
+
+    //fillGround(this.ctx); //, "#ff0000"
+    //this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+
+    //const p = worldToScreen2(this.currentPosition);
+    //console.log(p);
+
+    //drawCircle(this.ctx, this.currentPosition, 2 * SCALE);
+    //console.log("---");
+
+    this.texture.needsUpdate = true;
+  }
+
+  drawSegment(ctx, AL, AR, BL, BR, color = "rgba(0, 0, 255, 0.7)") {
+    ctx.beginPath();
+    ctx.moveTo(AL.x, AL.y);
+    ctx.lineTo(BL.x, BL.y);
+    ctx.lineTo(BR.x, BR.y);
+    ctx.lineTo(AR.x, AR.y);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    //this.ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    //this.ctx.stroke();
+  }
+
+  update2(gpsPosition) {
     if (gpsPosition === null || !this.active) {
       return;
     }

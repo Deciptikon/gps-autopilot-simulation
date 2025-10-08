@@ -14,7 +14,23 @@ export default class SceneManager {
   init() {
     // Создаем сцену
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x87ceeb); // голубой фон
+
+    // Создаем канвас для градиента
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+
+    // Рисуем вертикальный градиент
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0.15, "#87CEEB"); // Голубой вверху
+    gradient.addColorStop(0.17, "#90EE90"); // Зеленый внизу
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Устанавливаем как фон сцены
+    this.scene.background = new THREE.CanvasTexture(canvas);
 
     // Создаем камеру
     this.camera = new THREE.PerspectiveCamera(
@@ -32,10 +48,10 @@ export default class SceneManager {
     document.body.appendChild(this.renderer.domElement);
 
     // Создаем землю
-    this.createGround();
+    //this.createGround();
 
     // Создаем сетку
-    this.createGrid();
+    //this.createGrid();
 
     // Обработчик изменения размера окна
     window.addEventListener("resize", () => this.onWindowResize());
@@ -49,8 +65,8 @@ export default class SceneManager {
     });
 
     this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    this.ground.rotation.x = Math.PI / 2; // Поворачиваем плоскость горизонтально
-    this.ground.position.y = -2; // Опускаем землю ниже
+    this.ground.rotation.x = Math.PI / 2;
+    this.ground.position.y = -2;
     this.scene.add(this.ground);
   }
 

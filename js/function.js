@@ -1,3 +1,6 @@
+import { CANVAS_SIZE, GROUND_SIZE, SCALE } from "./constants.js";
+import Vector2d from "./Vector2d.js";
+
 export function sign(p1, p2, p3) {
   return (p1.x - p3.x) * (p2.z - p3.z) - (p2.x - p3.x) * (p1.z - p3.z);
 }
@@ -65,4 +68,29 @@ export function segment(point, i, leftPoints, rightPoints) {
   }
 
   return false;
+}
+
+export function fillGround(ctx, color = "#00ff00") {
+  const canvas = ctx.canvas;
+  ctx.fillStyle = color;
+  console.log(canvas.width, canvas.height);
+
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+export function worldToScreen(val) {
+  return (val / GROUND_SIZE.w) * CANVAS_SIZE.w;
+}
+
+export function worldToScreenVec2d(point) {
+  const y = CANVAS_SIZE.h - (point.y + GROUND_SIZE.h / 2) * SCALE;
+  const x = (point.x + GROUND_SIZE.w / 2) * SCALE;
+  return new Vector2d(x, y);
+}
+
+export function drawCircle(ctx, point, radius, color = "#ff0000") {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
+  ctx.fill();
 }

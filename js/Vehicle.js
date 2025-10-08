@@ -13,7 +13,7 @@ export default class Vehicle {
     this.maxSpeed = 0.01;
     this.acceleration = 0.0001;
     this.deceleration = 0.000001;
-    this.turnSpeed = 0.003;
+    this.turnSpeed = 0.005;
 
     // Управление
     this.angleRule = 0;
@@ -56,8 +56,8 @@ export default class Vehicle {
   }
 
   // Управление движением с физикой
-  move(angle, gas = true) {
-    if (gas) {
+  move(angle) {
+    if (this.gas) {
       this.speed = Math.min(this.speed + this.acceleration, this.maxSpeed);
     } else {
       this.speed = Math.max(this.speed - this.acceleration, 0);
@@ -104,6 +104,20 @@ export default class Vehicle {
 
   getSpeed() {
     return this.speed;
+  }
+
+  getGas() {
+    return this.gas;
+  }
+
+  setGas(gas) {
+    this.gas = gas;
+  }
+
+  swapGas() {
+    console.log(`swapGas`);
+
+    this.gas = !this.gas;
   }
 
   getCameraData() {
